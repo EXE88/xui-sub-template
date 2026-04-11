@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Subscription Dashboard</title>
+        <meta name="description" content="Monitor your subscription usage, data transfer, and quota in real-time">
+        <meta name="theme-color" content="#0f0f12">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{% static 'sub/css/styles.css' %}">
+    </head>
+    <body class="dark">
+        <div class="app">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-content">
+                    <div class="logo">
+                        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                        <span class="logo-text">Subscription Dashboard</span>
+                    </div>
+                    <div class="header-actions">
+                        <button id="refresh-btn" class="btn btn-ghost" title="Refresh Data">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                                <path d="M21 3v5h-5"></path>
+                            </svg>
+                        </button>
+                        <button id="theme-toggle" class="btn btn-ghost" title="Toggle Theme">
+                            <svg class="icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="4"></circle>
+                                <path d="M12 2v2"></path>
+                                <path d="M12 20v2"></path>
+                                <path d="m4.93 4.93 1.41 1.41"></path>
+                                <path d="m17.66 17.66 1.41 1.41"></path>
+                                <path d="M2 12h2"></path>
+                                <path d="M20 12h2"></path>
+                                <path d="m6.34 17.66-1.41 1.41"></path>
+                                <path d="m19.07 4.93-1.41 1.41"></path>
+                            </svg>
+                            <svg class="icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="main">
+                <div class="container">
+                    <!-- Title Section -->
+                    <div class="title-section">
+                        <div class="title-row">
+                            <h1 class="page-title">Usage Overview</h1>
+                            <div id="status-badge" class="status-badge status-active">
+                                <span class="status-dot"></span>
+                                <span class="status-text">Active</span>
+                            </div>
+                        </div>
+                        <p class="subscription-id">
+                            <span class="label">Subscription ID:</span>
+                            <code id="sub-id">ez7zcdex151qfsyw</code>
+                        </p>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Downloaded</span>
+                                <div class="stat-icon download">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p id="downloaded" class="stat-value">2.45 GB</p>
+                            <p class="stat-desc">Total data received</p>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Uploaded</span>
+                                <div class="stat-icon upload">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p id="uploaded" class="stat-value">856.2 MB</p>
+                            <p class="stat-desc">Total data sent</p>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Last Online</span>
+                                <div class="stat-icon online">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p id="last-online" class="stat-value">2 hours ago</p>
+                            <p class="stat-desc">Last connection time</p>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Expires</span>
+                                <div class="stat-icon expiry">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p id="expiry" class="stat-value">Apr 30, 2026</p>
+                            <p id="expiry-days" class="stat-desc">20 days remaining</p>
+                        </div>
+                    </div>
+
+                    <!-- Quota Section -->
+                    <div class="quota-card">
+                        <div class="quota-header">
+                            <div>
+                                <h2 class="quota-title">Data Quota</h2>
+                                <p class="quota-subtitle">Your monthly bandwidth usage</p>
+                            </div>
+                            <div class="quota-percentage">
+                                <span id="quota-percent">34.5%</span>
+                                <span class="quota-label">used</span>
+                            </div>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div id="progress-fill" class="progress-fill" style="width: 34.5%"></div>
+                            </div>
+                        </div>
+
+                        <div class="quota-stats">
+                            <div class="quota-stat">
+                                <div class="quota-stat-indicator download"></div>
+                                <div class="quota-stat-info">
+                                    <span class="quota-stat-label">Downloaded</span>
+                                    <span id="quota-downloaded" class="quota-stat-value">2.45 GB</span>
+                                </div>
+                            </div>
+                            <div class="quota-stat">
+                                <div class="quota-stat-indicator upload"></div>
+                                <div class="quota-stat-info">
+                                    <span class="quota-stat-label">Uploaded</span>
+                                    <span id="quota-uploaded" class="quota-stat-value">856.2 MB</span>
+                                </div>
+                            </div>
+                            <div class="quota-stat">
+                                <div class="quota-stat-indicator remaining"></div>
+                                <div class="quota-stat-info">
+                                    <span class="quota-stat-label">Remaining</span>
+                                    <span id="quota-remaining" class="quota-stat-value">6.55 GB</span>
+                                </div>
+                            </div>
+                            <div class="quota-stat">
+                                <div class="quota-stat-indicator total"></div>
+                                <div class="quota-stat-info">
+                                    <span class="quota-stat-label">Total Quota</span>
+                                    <span id="quota-total" class="quota-stat-value">10.00 GB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart Section -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div>
+                                <h2 class="chart-title">Consumption Chart</h2>
+                                <p class="chart-subtitle">Data usage over time</p>
+                            </div>
+                            <div class="chart-controls">
+                                <button class="chart-btn active" data-view="hourly">Hourly</button>
+                                <button class="chart-btn" data-view="daily">Daily</button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="usageChart"></canvas>
+                        </div>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <div class="legend-color primary"></div>
+                                <span>Data Usage</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Config Section -->
+                    <div class="config-card">
+                        <div class="config-header">
+                            <div class="config-title-row">
+                                <svg class="config-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                <div>
+                                    <h2 class="config-title">Connection Config</h2>
+                                    <p class="config-subtitle">Your secure connection string</p>
+                                </div>
+                            </div>
+                            <button id="toggle-config" class="btn btn-outline">
+                                <svg class="icon eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="icon eye-off-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                                <span class="toggle-text">Show</span>
+                            </button>
+                        </div>
+                        <div class="config-content">
+                            <div class="config-box">
+                                <code id="config-text" class="config-code hidden">vless://example-uuid@server.domain.com:443?encryption=none&security=tls&type=ws&host=server.domain.com&path=%2Fws#MyConfig</code>
+                                <code class="config-placeholder">••••••••••••••••••••••••••••••••••••••••</code>
+                            </div>
+                            <button id="copy-config" class="btn btn-primary">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Copy Config</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <footer class="footer">
+                        <p>Auto-refreshes every 30 seconds</p>
+                        <p id="last-updated">Last updated: just now</p>
+                    </footer>
+                </div>
+            </main>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast">
+            <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span class="toast-message">Copied to clipboard!</span>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+		<script src="{% static 'sub/js/config.js' %}"></script>
+        <script src="{% static 'sub/js/app.js' %}"></script>
+    </body>
+</html>
