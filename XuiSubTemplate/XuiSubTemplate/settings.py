@@ -17,6 +17,10 @@ if ALLOWED_HOSTS:
 else:
     ALLOWED_HOSTS = []
 
+ADMIN_PATH = os.getenv('ADMIN_PATH', 'admin').strip().strip('/')
+if not ADMIN_PATH:
+    ADMIN_PATH = 'admin'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
