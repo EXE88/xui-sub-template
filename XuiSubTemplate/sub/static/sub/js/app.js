@@ -29,6 +29,24 @@ const elements = {
     lastUpdated: document.getElementById('last-updated')
 };
 
+function toJalali(dateString) {
+    if (!dateString) return '∞';
+
+    const date = new Date(dateString);
+
+    const parts = new Intl.DateTimeFormat('en-CA-u-ca-persian', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).formatToParts(date);
+
+    const year = parts.find(p => p.type === 'year').value;
+    const month = parts.find(p => p.type === 'month').value;
+    const day = parts.find(p => p.type === 'day').value;
+
+    return `${year}/${month}/${day}`;
+}
+
 // Utility Functions
 const utils = {
     formatBytes(bytes, decimals = 2) {
@@ -307,20 +325,61 @@ function updateDashboard(data) {
     updateStatus(data.status);
 
     // Stats
-    elements.downloaded.textContent = utils.formatBytes(data.downloaded);
-    elements.uploaded.textContent = utils.formatBytes(data.uploaded);
-    elements.lastOnline.textContent = utils.getRelativeTime(data.lastOnline);
-    elements.expiry.textContent = utils.formatDate(data.expiry);
-    elements.expiryDays.textContent = utils.getDaysRemaining(data.expiry);
+    if (data.status === 'expired') {
+        elements.downloaded.textContent = 'Expired';
+        elements.uploaded.textContent = 'Expired';
+    } else {
+        elements.downloaded.textContent = utils.formatBytes(data.downloaded);
+        elements.uploaded.textContent = utils.formatBytes(data.uploaded);
+    }
+
+    if (!data.lastOnline) {
+        elements.lastOnline.textContent = '—';
+    } else {
+        elements.lastOnline.textContent = utils.getRelativeTime(data.lastOnline);
+    }
+
+    if (data.status === 'expired') {
+        elements.expiry.textContent = 'Expired';
+        elements.expiryDays.textContent = '';
+    }
+    else if (data.isUnlimitedTime) {
+        elements.expiry.textContent = '∞';
+        elements.expiryDays.textContent = 'Unlimited';
+    }
+    else if (data.expiry) {
+        elements.expiry.textContent = toJalali(data.expiry);
+        elements.expiryDays.textContent = utils.getDaysRemaining(data.expiry);
+    }
+    else {
+        elements.expiry.textContent = '-';
+    }
 
     // Quota
     const usedPercent = ((data.totalUsed / data.totalQuota) * 100).toFixed(1);
-    elements.quotaPercent.textContent = usedPercent + '%';
-    elements.progressFill.style.width = usedPercent + '%';
+    if (data.status === 'expired') {
+        elements.quotaTotal.textContent = 'Expired';
+        elements.quotaRemaining.textContent = 'Expired';
+        elements.quotaPercent.textContent = '0%';
+        elements.progressFill.style.width = '0%';
+    }
+    else if (data.isUnlimitedQuota) {
+        elements.quotaTotal.textContent = '∞';
+        elements.quotaRemaining.textContent = '∞';
+        elements.quotaPercent.textContent = '∞';
+        elements.progressFill.style.width = '100%';
+    }
+    else {
+        const percent = (data.totalUsed / data.totalQuota) * 100;
+
+        elements.quotaTotal.textContent = utils.formatBytes(data.totalQuota);
+        elements.quotaRemaining.textContent = utils.formatBytes(data.remained);
+        elements.quotaPercent.textContent = percent.toFixed(1) + '%';
+        elements.progressFill.style.width = percent + '%';
+    }
+
     elements.quotaDownloaded.textContent = utils.formatBytes(data.downloaded);
     elements.quotaUploaded.textContent = utils.formatBytes(data.uploaded);
-    elements.quotaRemaining.textContent = utils.formatBytes(data.remained);
-    elements.quotaTotal.textContent = utils.formatBytes(data.totalQuota);
 
     // Config
     elements.configText.textContent = data.config;

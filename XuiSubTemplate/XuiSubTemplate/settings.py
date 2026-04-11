@@ -24,7 +24,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'sub',
-    'datarecorder',
 ]
 
 MIDDLEWARE = [
@@ -61,6 +60,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+    },
+    'xui': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.getenv('XUI_DB_ADDRESS'),
+        'OPTIONS': {
+            'timeout': 20,
+        }
     }
 }
 

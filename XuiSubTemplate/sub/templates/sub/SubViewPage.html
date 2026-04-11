@@ -266,6 +266,9 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <script>
+            window.DEMO_DATA = {{ demo_data_json|safe }};
+        </script>
 		<script src="{% static 'sub/js/config.js' %}"></script>
         <script src="{% static 'sub/js/app.js' %}"></script>
     </body>
