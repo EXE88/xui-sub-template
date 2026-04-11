@@ -3,6 +3,34 @@ let currentView = 'hourly';
 let refreshTimer = null;
 let isConfigVisible = false;
 
+const CHART_LOCALE = 'fa-IR-u-ca-persian-nu-latn';
+const CHART_TIMEZONE = 'Asia/Tehran';
+const CHART_FONT_FAMILY = "'Inter', 'Segoe UI', Tahoma, Arial, sans-serif";
+
+const jalaliDateFormatter = new Intl.DateTimeFormat(CHART_LOCALE, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: CHART_TIMEZONE
+});
+
+const jalaliDateTimeFormatter = new Intl.DateTimeFormat(CHART_LOCALE, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: CHART_TIMEZONE
+});
+
+const dayKeyFormatter = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: CHART_TIMEZONE
+});
+
 // DOM Elements
 const elements = {
     themeToggle: document.getElementById('theme-toggle'),
@@ -30,21 +58,9 @@ const elements = {
 };
 
 function toJalali(dateString) {
-    if (!dateString) return '∞';
-
+    if (!dateString) return 'Unlimited';
     const date = new Date(dateString);
-
-    const parts = new Intl.DateTimeFormat('en-CA-u-ca-persian', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).formatToParts(date);
-
-    const year = parts.find(p => p.type === 'year').value;
-    const month = parts.find(p => p.type === 'month').value;
-    const day = parts.find(p => p.type === 'day').value;
-
-    return `${year}/${month}/${day}`;
+    return jalaliDateFormatter.format(date);
 }
 
 // Utility Functions
@@ -55,6 +71,11 @@ const utils = {
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+    },
+
+    formatMegabytes(value, decimals = 2) {
+        const safe = Number.isFinite(value) ? value : 0;
+        return `${safe.toFixed(decimals)} MB`;
     },
 
     formatDate(dateString) {
@@ -171,6 +192,9 @@ function createChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            font: {
+                family: CHART_FONT_FAMILY
+            },
             interaction: {
                 mode: 'index',
                 intersect: false
@@ -187,13 +211,19 @@ function createChart(data) {
                     borderWidth: 1,
                     padding: 12,
                     cornerRadius: 8,
+                    titleFont: {
+                        family: CHART_FONT_FAMILY
+                    },
+                    bodyFont: {
+                        family: CHART_FONT_FAMILY
+                    },
                     displayColors: false,
                     callbacks: {
                         title: function(items) {
                             return items[0].label;
                         },
                         label: function(context) {
-                            return 'Usage: ' + utils.formatBytes(context.raw);
+                            return 'Usage: ' + utils.formatMegabytes(context.raw, 3);
                         }
                     }
                 }
@@ -226,7 +256,7 @@ function createChart(data) {
                             size: 11
                         },
                         callback: function(value) {
-                            return utils.formatBytes(value, 0);
+                            return utils.formatMegabytes(value, 0);
                         },
                         maxTicksLimit: 5
                     },
@@ -242,33 +272,37 @@ function createChart(data) {
 
 function prepareChartData(usageChart, view) {
     if (view === 'daily') {
-        // Aggregate by day
+        // Aggregate by day (Tehran timezone, Persian calendar label)
         const dailyData = {};
         usageChart.forEach(item => {
-            const date = item.time.split('T')[0];
-            if (!dailyData[date]) {
-                dailyData[date] = 0;
-            }
-            dailyData[date] += item.used;
-        });
-
-        const labels = Object.keys(dailyData).map(date => {
-            const d = new Date(date);
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        });
-        const values = Object.values(dailyData);
-
-        return { labels, values };
-    } else {
-        // Hourly view
-        const labels = usageChart.map(item => {
             const date = new Date(item.time);
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const key = dayKeyFormatter.format(date);
+
+            if (!dailyData[key]) {
+                dailyData[key] = {
+                    label: jalaliDateFormatter.format(date),
+                    used: 0
+                };
+            }
+
+            dailyData[key].used += Number(item.used || 0);
         });
-        const values = usageChart.map(item => item.used);
+
+        const keys = Object.keys(dailyData);
+        const labels = keys.map(key => dailyData[key].label);
+        const values = keys.map(key => dailyData[key].used);
 
         return { labels, values };
     }
+
+    // Hourly view (Tehran timezone, Persian calendar + time)
+    const labels = usageChart.map(item => {
+        const date = new Date(item.time);
+        return jalaliDateTimeFormatter.format(date);
+    });
+    const values = usageChart.map(item => Number(item.used || 0));
+
+    return { labels, values };
 }
 
 function updateChartColors() {
@@ -334,7 +368,7 @@ function updateDashboard(data) {
     }
 
     if (!data.lastOnline) {
-        elements.lastOnline.textContent = '—';
+        elements.lastOnline.textContent = '-';
     } else {
         elements.lastOnline.textContent = utils.getRelativeTime(data.lastOnline);
     }
@@ -344,7 +378,7 @@ function updateDashboard(data) {
         elements.expiryDays.textContent = '';
     }
     else if (data.isUnlimitedTime) {
-        elements.expiry.textContent = '∞';
+        elements.expiry.textContent = 'Unlimited';
         elements.expiryDays.textContent = 'Unlimited';
     }
     else if (data.expiry) {
@@ -356,7 +390,6 @@ function updateDashboard(data) {
     }
 
     // Quota
-    const usedPercent = ((data.totalUsed / data.totalQuota) * 100).toFixed(1);
     if (data.status === 'expired') {
         elements.quotaTotal.textContent = 'Expired';
         elements.quotaRemaining.textContent = 'Expired';
@@ -364,9 +397,9 @@ function updateDashboard(data) {
         elements.progressFill.style.width = '0%';
     }
     else if (data.isUnlimitedQuota) {
-        elements.quotaTotal.textContent = '∞';
-        elements.quotaRemaining.textContent = '∞';
-        elements.quotaPercent.textContent = '∞';
+        elements.quotaTotal.textContent = 'Unlimited';
+        elements.quotaRemaining.textContent = 'Unlimited';
+        elements.quotaPercent.textContent = 'Unlimited';
         elements.progressFill.style.width = '100%';
     }
     else {
@@ -385,10 +418,10 @@ function updateDashboard(data) {
     elements.configText.textContent = data.config;
 
     // Chart
-    createChart(data.usageChart);
+    createChart(data.usageChart || []);
 
     // Last updated
-    elements.lastUpdated.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+    elements.lastUpdated.textContent = 'Last updated: ' + jalaliDateTimeFormatter.format(new Date());
 }
 
 // Config Functions
@@ -463,7 +496,7 @@ function initEventListeners() {
     // Theme toggle
     elements.themeToggle.addEventListener('click', toggleTheme);
 
-    // Refresh button — re-render from current DEMO_DATA (no network call)
+    // Refresh button - re-render from current DEMO_DATA (no network call)
     if (elements.refreshBtn) {
         elements.refreshBtn.addEventListener('click', () => {
             elements.refreshBtn.classList.add('refreshing');

@@ -1,16 +1,47 @@
 import json
 import os
 import base64
+import re
 from pathlib import Path
 import requests
 from dotenv import load_dotenv
 from django.shortcuts import render
 from django.views import View
 from django.db import connections
-from datetime import datetime, timedelta
+from datetime import datetime
+
+from .models import ClientUsageSnapshot
 
 env_path = Path(__file__).resolve().parents[1] / '.env'
 load_dotenv(env_path)
+
+
+CONFIG_USAGE_SUFFIX_PATTERN = re.compile(
+    r"-(?:\d+(?:\.\d+)?)MB(?:%F0%9F%93%8A|📊)$",
+    re.IGNORECASE,
+)
+
+
+def sanitize_config_name_suffix(config_text):
+    """
+    Remove usage suffixes like '-828.21MB📊' from the URL fragment part of each config line.
+    """
+    cleaned_lines = []
+    for raw_line in config_text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        if "#" not in line:
+            cleaned_lines.append(line)
+            continue
+
+        prefix, fragment = line.rsplit("#", 1)
+        cleaned_fragment = CONFIG_USAGE_SUFFIX_PATTERN.sub("", fragment)
+        cleaned_lines.append(f"{prefix}#{cleaned_fragment}")
+
+    return "\n".join(cleaned_lines)
+
 
 class SubView(View):
     def get(self, request, subid):
@@ -97,16 +128,22 @@ class SubView(View):
 
         last_online_iso = to_iso(last_seen)
 
-        usage_chart = []
-        now = datetime.utcnow()
+        chart_limit = int(os.getenv("USAGE_CHART_LIMIT", "240"))
+        if chart_limit < 1:
+            chart_limit = 1
+        snapshots = list(
+            ClientUsageSnapshot.objects.filter(subid=subid)
+            .order_by("-recorded_at")[:chart_limit]
+        )
+        snapshots.reverse()
 
-        for i in range(6):
-            usage_chart.append({
-                "time": (now - timedelta(hours=i)).strftime("%Y-%m-%d %H:00"),
-                "used": 1000 * (i + 1)
-            })
-
-        usage_chart.reverse()
+        usage_chart = [
+            {
+                "time": snapshot.recorded_at.isoformat(),
+                "used": snapshot.used_mb,
+            }
+            for snapshot in snapshots
+        ]
 
         protocol = os.getenv("XUI_SUBSERVICE_PROTOCOL", "http")
         domain = os.getenv("XUI_SUBSERVICE_DOAMIN", "")
@@ -125,7 +162,8 @@ class SubView(View):
                 if missing_padding:
                     encoded_config += "=" * (4 - missing_padding)
 
-                config = base64.b64decode(encoded_config).decode("utf-8")
+                decoded_config = base64.b64decode(encoded_config).decode("utf-8")
+                config = sanitize_config_name_suffix(decoded_config)
             except Exception:
                 config = ""
 

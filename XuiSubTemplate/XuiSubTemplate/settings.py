@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import importlib.util
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,6 +26,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'sub',
 ]
+
+if importlib.util.find_spec('django_crontab') is not None:
+    INSTALLED_APPS.append('django_crontab')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -101,3 +105,8 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+USAGE_CRON_SCHEDULE = os.getenv('USAGE_CRON_SCHEDULE', '0 * * * *')
+
+CRONJOBS = [
+    (USAGE_CRON_SCHEDULE, 'sub.crons.record_clients_usage', '>> /var/xuisub-template/logs/record_clients_usage.log 2>&1'),
+]
