@@ -2,5 +2,5 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-	path('', views.index, name='sub_view'),
+	path('<str:subid>/', views.SubView.as_view(), name='sub_view'),
 ]
