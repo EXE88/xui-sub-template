@@ -1,13 +1,10 @@
 import json
-import logging
 
 from django.db import connections
 from django.db.models import Max
 from django.utils import timezone
 
 from .models import ClientUsageSnapshot
-
-logger = logging.getLogger(__name__)
 
 
 def _to_int(value, default=0):
@@ -72,7 +69,7 @@ def record_clients_usage():
     eligible_clients = _load_eligible_clients(now_ms)
 
     if not eligible_clients:
-        logger.info("record_clients_usage: no eligible clients found")
+        print("record_clients_usage: no eligible clients found")
         return
 
     with connections["xui"].cursor() as cursor:
@@ -106,7 +103,7 @@ def record_clients_usage():
         )
 
     if not candidates:
-        logger.info("record_clients_usage: no active clients after traffic checks")
+        print("record_clients_usage: no active clients after traffic checks")
         return
 
     subids = list({item["subid"] for item in candidates})
@@ -136,4 +133,61 @@ def record_clients_usage():
         )
 
     ClientUsageSnapshot.objects.bulk_create(to_create, batch_size=1000)
-    logger.info("record_clients_usage: created %s snapshots", len(to_create))
+    print(f"record_clients_usage: created {len(to_create)} snapshots")
+
+
+def cleanup_expired_clients_usage():
+    """
+    Delete usage snapshots for clients that are expired:
+    - time is expired (expiryTime < 0 or expiryTime > 0 and <= now)
+    - quota is exhausted (totalGB > 0 and used >= totalGB)
+    """
+    now_ms = int(timezone.now().timestamp() * 1000)
+
+    with connections["xui"].cursor() as cursor:
+        cursor.execute("SELECT enable, settings FROM inbounds")
+        inbound_rows = cursor.fetchall()
+
+    with connections["xui"].cursor() as cursor:
+        cursor.execute("SELECT email, up, down FROM client_traffics")
+        traffic_rows = cursor.fetchall()
+
+    traffic_totals = {}
+    for email, up, down in traffic_rows:
+        traffic_totals[email] = _to_int(up, 0) + _to_int(down, 0)
+
+    expired_subids = set()
+
+    for inbound_enable, settings_json in inbound_rows:
+        if not inbound_enable or not settings_json:
+            continue
+
+        try:
+            settings = json.loads(settings_json)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+
+        for client in settings.get("clients", []):
+            email = client.get("email")
+            subid = client.get("subId")
+            if not email or not subid:
+                continue
+
+            expiry_time = _to_int(client.get("expiryTime"), 0)
+            total_gb = _to_int(client.get("totalGB"), 0)
+            total_used_bytes = traffic_totals.get(email, 0)
+
+            expired_by_time = expiry_time < 0 or (expiry_time > 0 and expiry_time <= now_ms)
+            expired_by_quota = total_gb > 0 and total_used_bytes >= total_gb
+
+            if expired_by_time or expired_by_quota:
+                expired_subids.add(subid)
+
+    if not expired_subids:
+        print("cleanup_expired_clients_usage: no expired clients found")
+        return
+
+    deleted_count, _ = ClientUsageSnapshot.objects.filter(subid__in=list(expired_subids)).delete()
+    print(
+        f"cleanup_expired_clients_usage: deleted {deleted_count} snapshots for {len(expired_subids)} expired clients"
+    )

@@ -110,7 +110,30 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 USAGE_CRON_SCHEDULE = os.getenv('USAGE_CRON_SCHEDULE', '0 * * * *')
+USAGE_CLEANUP_CRON_SCHEDULE = os.getenv('USAGE_CLEANUP_CRON_SCHEDULE', '15 3 * * *')
+CRON_LOG_DIR = Path(os.getenv('CRON_LOG_DIR', str(BASE_DIR / 'logs')))
+
+
+def _prepare_cron_log_file(filename):
+    requested_dir = CRON_LOG_DIR
+    fallback_dir = BASE_DIR / 'logs'
+
+    try:
+        requested_dir.mkdir(parents=True, exist_ok=True)
+        target_file = requested_dir / filename
+        target_file.touch(exist_ok=True)
+        return target_file
+    except OSError:
+        fallback_dir.mkdir(parents=True, exist_ok=True)
+        target_file = fallback_dir / filename
+        target_file.touch(exist_ok=True)
+        return target_file
+
+
+RECORD_USAGE_LOG_FILE = _prepare_cron_log_file('record_clients_usage.log')
+CLEANUP_USAGE_LOG_FILE = _prepare_cron_log_file('cleanup_expired_clients_usage.log')
 
 CRONJOBS = [
-    (USAGE_CRON_SCHEDULE, 'sub.crons.record_clients_usage', '>> /var/xuisub-template/logs/record_clients_usage.log 2>&1'),
+    (USAGE_CRON_SCHEDULE, 'sub.crons.record_clients_usage', f'>> "{RECORD_USAGE_LOG_FILE}" 2>&1'),
+    (USAGE_CLEANUP_CRON_SCHEDULE, 'sub.crons.cleanup_expired_clients_usage', f'>> "{CLEANUP_USAGE_LOG_FILE}" 2>&1'),
 ]
