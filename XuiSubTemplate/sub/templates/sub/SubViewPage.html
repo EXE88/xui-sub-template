@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 {% load static %}
 <html lang="en">
-    <head>
+    <head>  
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Subscription Dashboard</title>
@@ -55,18 +55,30 @@
             <!-- Main Content -->
             <main class="main">
                 <div class="container">
+                    {% if error %}
+                    <div class="config-card">
+                        <div class="config-header">
+                            <div class="config-title-row">
+                                <div>
+                                    <h2 class="config-title">Request Error</h2>
+                                    <p class="config-subtitle">{{ error }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                     <!-- Title Section -->
                     <div class="title-section">
                         <div class="title-row">
                             <h1 class="page-title">Usage Overview</h1>
-                            <div id="status-badge" class="status-badge status-active">
+                            <div id="status-badge" class="status-badge status-deactive">
                                 <span class="status-dot"></span>
-                                <span class="status-text">Active</span>
+                                <span class="status-text">Unavailable</span>
                             </div>
                         </div>
                         <p class="subscription-id">
                             <span class="label">Subscription ID:</span>
-                            <code id="sub-id">ez7zcdex151qfsyw</code>
+                            <code id="sub-id">-</code>
                         </p>
                     </div>
 
@@ -83,7 +95,7 @@
                                     </svg>
                                 </div>
                             </div>
-                            <p id="downloaded" class="stat-value">2.45 GB</p>
+                            <p id="downloaded" class="stat-value">-</p>
                             <p class="stat-desc">Total data received</p>
                         </div>
 
@@ -98,7 +110,7 @@
                                     </svg>
                                 </div>
                             </div>
-                            <p id="uploaded" class="stat-value">856.2 MB</p>
+                            <p id="uploaded" class="stat-value">-</p>
                             <p class="stat-desc">Total data sent</p>
                         </div>
 
@@ -112,7 +124,7 @@
                                     </svg>
                                 </div>
                             </div>
-                            <p id="last-online" class="stat-value">2 hours ago</p>
+                            <p id="last-online" class="stat-value">-</p>
                             <p class="stat-desc">Last connection time</p>
                         </div>
 
@@ -128,8 +140,8 @@
                                     </svg>
                                 </div>
                             </div>
-                            <p id="expiry" class="stat-value">Apr 30, 2026</p>
-                            <p id="expiry-days" class="stat-desc">20 days remaining</p>
+                            <p id="expiry" class="stat-value">-</p>
+                            <p id="expiry-days" class="stat-desc">-</p>
                         </div>
                     </div>
 
@@ -141,14 +153,14 @@
                                 <p class="quota-subtitle">Your monthly bandwidth usage</p>
                             </div>
                             <div class="quota-percentage">
-                                <span id="quota-percent">34.5%</span>
+                                <span id="quota-percent">-</span>
                                 <span class="quota-label">used</span>
                             </div>
                         </div>
 
                         <div class="progress-container">
                             <div class="progress-bar">
-                                <div id="progress-fill" class="progress-fill" style="width: 34.5%"></div>
+                                <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
                             </div>
                         </div>
 
@@ -157,28 +169,28 @@
                                 <div class="quota-stat-indicator download"></div>
                                 <div class="quota-stat-info">
                                     <span class="quota-stat-label">Downloaded</span>
-                                    <span id="quota-downloaded" class="quota-stat-value">2.45 GB</span>
+                                    <span id="quota-downloaded" class="quota-stat-value">-</span>
                                 </div>
                             </div>
                             <div class="quota-stat">
                                 <div class="quota-stat-indicator upload"></div>
                                 <div class="quota-stat-info">
                                     <span class="quota-stat-label">Uploaded</span>
-                                    <span id="quota-uploaded" class="quota-stat-value">856.2 MB</span>
+                                    <span id="quota-uploaded" class="quota-stat-value">-</span>
                                 </div>
                             </div>
                             <div class="quota-stat">
                                 <div class="quota-stat-indicator remaining"></div>
                                 <div class="quota-stat-info">
                                     <span class="quota-stat-label">Remaining</span>
-                                    <span id="quota-remaining" class="quota-stat-value">6.55 GB</span>
+                                    <span id="quota-remaining" class="quota-stat-value">-</span>
                                 </div>
                             </div>
                             <div class="quota-stat">
                                 <div class="quota-stat-indicator total"></div>
                                 <div class="quota-stat-info">
                                     <span class="quota-stat-label">Total Quota</span>
-                                    <span id="quota-total" class="quota-stat-value">10.00 GB</span>
+                                    <span id="quota-total" class="quota-stat-value">-</span>
                                 </div>
                             </div>
                         </div>
@@ -234,7 +246,7 @@
                         </div>
                         <div class="config-content">
                             <div class="config-box">
-                                <code id="config-text" class="config-code hidden">vless://example-uuid@server.domain.com:443?encryption=none&security=tls&type=ws&host=server.domain.com&path=%2Fws#MyConfig</code>
+                                <code id="config-text" class="config-code hidden"></code>
                                 <code class="config-placeholder">******************************</code>
                             </div>
                             <button id="copy-config" class="btn btn-primary">
@@ -250,7 +262,7 @@
                     <!-- Footer -->
                     <footer class="footer">
                         <p>Auto-refreshes every 30 seconds</p>
-                        <p id="last-updated">Last updated: just now</p>
+                        <p id="last-updated">Last updated: -</p>
                     </footer>
                 </div>
             </main>
@@ -266,10 +278,11 @@
         </div>
 
         <script src="{% static "sub/js/chart.js" %}"></script>
+        {% if demo_data_json %}
         <script>
             window.DEMO_DATA = {{ demo_data_json|safe }};
         </script>
-		<script src="{% static 'sub/js/config.js' %}"></script>
+        {% endif %}
         <script src="{% static 'sub/js/app.js' %}"></script>
     </body>
 </html>

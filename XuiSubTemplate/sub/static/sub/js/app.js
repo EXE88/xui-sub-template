@@ -2,6 +2,7 @@ let chart = null;
 let currentView = 'hourly';
 let refreshTimer = null;
 let isConfigVisible = false;
+const DEMO_DATA = (typeof window !== 'undefined' && window.DEMO_DATA) ? window.DEMO_DATA : null;
 
 const CHART_LOCALE = 'fa-IR-u-ca-persian-nu-latn';
 const CHART_TIMEZONE = 'Asia/Tehran';
@@ -447,6 +448,11 @@ function toggleConfigVisibility() {
 async function copyConfig() {
     const config = elements.configText.textContent;
 
+    if (!config) {
+        showToast('No config available');
+        return;
+    }
+
     try {
         await navigator.clipboard.writeText(config);
         showToast('Copied to clipboard!');
@@ -480,6 +486,10 @@ function showToast(message) {
 
 // Chart View Toggle
 function setChartView(view) {
+    if (!DEMO_DATA) {
+        return;
+    }
+
     currentView = view;
 
     // Update buttons
@@ -494,10 +504,12 @@ function setChartView(view) {
 // Event Listeners
 function initEventListeners() {
     // Theme toggle
-    elements.themeToggle.addEventListener('click', toggleTheme);
+    if (elements.themeToggle) {
+        elements.themeToggle.addEventListener('click', toggleTheme);
+    }
 
     // Refresh button - re-render from current DEMO_DATA (no network call)
-    if (elements.refreshBtn) {
+    if (elements.refreshBtn && DEMO_DATA) {
         elements.refreshBtn.addEventListener('click', () => {
             elements.refreshBtn.classList.add('refreshing');
             try {
@@ -514,10 +526,14 @@ function initEventListeners() {
     });
 
     // Config toggle
-    elements.toggleConfig.addEventListener('click', toggleConfigVisibility);
+    if (elements.toggleConfig) {
+        elements.toggleConfig.addEventListener('click', toggleConfigVisibility);
+    }
 
     // Copy config
-    elements.copyConfig.addEventListener('click', copyConfig);
+    if (elements.copyConfig) {
+        elements.copyConfig.addEventListener('click', copyConfig);
+    }
 }
 
 // Auto-refresh removed: template is server-rendered and not expected to poll for updates.
@@ -526,7 +542,16 @@ function initEventListeners() {
 function init() {
     initTheme();
     initEventListeners();
-    // Render once from DEMO_DATA provided by server (or fallback in config.js)
+
+    if (!DEMO_DATA) {
+        updateStatus('Unavailable');
+        elements.configText.textContent = '';
+        if (elements.lastUpdated) {
+            elements.lastUpdated.textContent = 'No subscription data available';
+        }
+        return;
+    }
+
     updateDashboard(DEMO_DATA);
 }
 

@@ -141,6 +141,7 @@ def cleanup_expired_clients_usage():
     Delete usage snapshots for clients that are expired:
     - time is expired (expiryTime < 0 or expiryTime > 0 and <= now)
     - quota is exhausted (totalGB > 0 and used >= totalGB)
+    Also delete orphan snapshots whose subid no longer exists in x-ui inbounds.settings.
     """
     now_ms = int(timezone.now().timestamp() * 1000)
 
@@ -156,10 +157,11 @@ def cleanup_expired_clients_usage():
     for email, up, down in traffic_rows:
         traffic_totals[email] = _to_int(up, 0) + _to_int(down, 0)
 
+    current_subids = set()
     expired_subids = set()
 
     for inbound_enable, settings_json in inbound_rows:
-        if not inbound_enable or not settings_json:
+        if not settings_json:
             continue
 
         try:
@@ -173,6 +175,11 @@ def cleanup_expired_clients_usage():
             if not email or not subid:
                 continue
 
+            current_subids.add(subid)
+
+            if not inbound_enable:
+                continue
+
             expiry_time = _to_int(client.get("expiryTime"), 0)
             total_gb = _to_int(client.get("totalGB"), 0)
             total_used_bytes = traffic_totals.get(email, 0)
@@ -183,11 +190,19 @@ def cleanup_expired_clients_usage():
             if expired_by_time or expired_by_quota:
                 expired_subids.add(subid)
 
-    if not expired_subids:
-        print("cleanup_expired_clients_usage: no expired clients found")
+    snapshot_subids = set(
+        ClientUsageSnapshot.objects.values_list("subid", flat=True).distinct()
+    )
+    orphan_subids = snapshot_subids - current_subids
+    subids_to_delete = expired_subids | orphan_subids
+
+    if not subids_to_delete:
+        print("cleanup_expired_clients_usage: no expired or orphan clients found")
         return
 
-    deleted_count, _ = ClientUsageSnapshot.objects.filter(subid__in=list(expired_subids)).delete()
+    deleted_count, _ = ClientUsageSnapshot.objects.filter(subid__in=list(subids_to_delete)).delete()
     print(
-        f"cleanup_expired_clients_usage: deleted {deleted_count} snapshots for {len(expired_subids)} expired clients"
+        "cleanup_expired_clients_usage: "
+        f"deleted {deleted_count} snapshots for "
+        f"{len(expired_subids)} expired clients and {len(orphan_subids)} orphan clients"
     )
