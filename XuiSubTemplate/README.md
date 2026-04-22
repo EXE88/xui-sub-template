@@ -38,6 +38,15 @@ pip install -r requierments.txt
 pip install gunicorn
 ```
 
+Fast path:
+
+```bash
+cd /opt/xui-sub-template/XuiSubTemplate
+bash deploy/install.sh
+```
+
+The installer script asks for the required values, writes `.env`, creates the virtualenv, installs dependencies, runs migrations and static collection, registers Django crontab jobs, and creates/restarts the `systemd` service.
+
 ## 3) Environment config
 
 Create `.env` from sample:
