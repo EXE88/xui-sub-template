@@ -42,10 +42,12 @@ Fast path:
 
 ```bash
 cd /opt/xui-sub-template/XuiSubTemplate
-bash deploy/install.sh
+bash deploy/install.sh install
+bash deploy/install.sh status
+bash deploy/install.sh uninstall
 ```
 
-The installer script asks for the required values, writes `.env`, creates the virtualenv, installs dependencies, runs migrations and static collection, registers Django crontab jobs, and creates/restarts the `systemd` service.
+The installer script asks for the required values, supports optional proxy settings for installation, writes `.env`, creates the virtualenv, installs dependencies, runs migrations and static collection, registers Django crontab jobs, creates/restarts the `systemd` service, and can later show status or uninstall the stack.
 
 ## 3) Environment config
 

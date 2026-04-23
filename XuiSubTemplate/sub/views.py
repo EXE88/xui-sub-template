@@ -123,14 +123,28 @@ def _append_param(params, key, value):
         params.append((key, ",".join(values)))
 
 
+def _pick_primary_value(*values):
+    for value in values:
+        items = _to_string_list(value)
+        if items:
+            return items[0]
+    return ""
+
+
 def _build_config_name(client_data, inbound_data):
-    return (
-        client_data.get("comment")
-        or client_data.get("email")
-        or inbound_data.get("remark")
-        or client_data.get("subId")
-        or "config"
-    )
+    comment = _pick_primary_value(client_data.get("comment"))
+    if comment:
+        return comment
+
+    inbound_remark = _pick_primary_value(inbound_data.get("remark"))
+    email = _pick_primary_value(client_data.get("email"))
+    subid = _pick_primary_value(client_data.get("subId"))
+
+    if inbound_remark and email:
+        return f"{inbound_remark}-{email}"
+    if inbound_remark and subid:
+        return f"{inbound_remark}-{subid}"
+    return email or inbound_remark or subid or "config"
 
 
 def _extract_transport_params(stream_settings, network):
@@ -152,7 +166,11 @@ def _extract_transport_params(stream_settings, network):
         ws_settings = stream_settings.get("wsSettings") or {}
         headers = ws_settings.get("headers") or {}
         ws_path, path_metadata = _extract_path_metadata(ws_settings.get("path"))
-        ws_host = path_metadata.get("host") or _pick_header_value(headers, "Host")
+        ws_host = (
+            path_metadata.get("host")
+            or _pick_primary_value(ws_settings.get("host"))
+            or _pick_header_value(headers, "Host")
+        )
         if ws_host:
             params.append(("host", ws_host))
         if ws_path:
